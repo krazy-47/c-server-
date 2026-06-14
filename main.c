@@ -103,7 +103,7 @@ while(1){
 
     
     int filename_len = second_space - (first_space + 2);
-    if (filename_len <= 0 || filename_len >= 256) {
+    if (filename_len < 0 || filename_len >= 256) {
         char *bad = "HTTP/1.0 400 Bad Request\r\n\r\n";
         send(new_socket, bad, strlen(bad), 0);
         close(new_socket);
@@ -113,6 +113,12 @@ while(1){
     char filename[256];
     strncpy(filename, first_space + 2, filename_len);
     filename[filename_len] = '\0';
+
+    if (strcmp(filename, "") == 0) {
+    strcpy(filename, "file.html");
+    }
+
+
     printf("Requested file: %s\n", filename);
     
     FILE *file = fopen(filename, "rb");
