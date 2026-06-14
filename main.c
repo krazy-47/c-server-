@@ -15,6 +15,9 @@
 int opt = 1;
 struct sockaddr_in address;
 socklen_t addrlen = sizeof(address);
+char *first_space;
+int lengh;
+
 
 int main() {
 //erase trash data 
@@ -64,8 +67,8 @@ else {
 
 
 while(1){
-    char *response = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<html><body><h1>Hello from my server!</h1></body></html>";
-
+    
+ 
     
     new_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen);
 
@@ -79,11 +82,66 @@ while(1){
     if (recv(new_socket, request, BUFFER_SIZE - 1, 0) < 0) {
         perror("error reciving info ");
     }
-    if (send(new_socket, response, strlen(response), 0) < 0) {
-    perror("error sending response");
+
+
+    char *first_space = strchr(request, ' ');
+    if (first_space == NULL) {
+        
+        char *bad = "HTTP/1.0 400 Bad Request\r\n\r\n";
+        send(new_socket, bad, strlen(bad), 0);
+        close(new_socket);
+        continue;
     }
 
+    char *second_space = strstr(first_space + 1, " HTTP/");
+    if (second_space == NULL) {
+        char *bad = "HTTP/1.0 400 Bad Request\r\n\r\n";
+        send(new_socket, bad, strlen(bad), 0);
+        close(new_socket);
+        continue;
+    }
+
+    
+    int filename_len = second_space - (first_space + 2);
+    if (filename_len <= 0 || filename_len >= 256) {
+        char *bad = "HTTP/1.0 400 Bad Request\r\n\r\n";
+        send(new_socket, bad, strlen(bad), 0);
+        close(new_socket);
+        continue;
+    }
+
+    char filename[256];
+    strncpy(filename, first_space + 2, filename_len);
+    filename[filename_len] = '\0';
+    printf("Requested file: %s\n", filename);
+    
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL){
+         char *bad = "HTTP/1.0 404 file not found, sorry ! \r\n\r\n";
+        send(new_socket, bad, strlen(bad), 0);
+        close(new_socket);
+    } 
+    else {
+         fseek(file, 0, SEEK_END);
+         long size = ftell(file);
+         rewind(file);
+         char header[128];
+         sprintf(header, "HTTP/1.0 200 OK\r\nContent-Length: %ld\r\n\r\n", size);
+         send(new_socket, header, strlen(header), 0);
+
+         char buffer[BUFFER_SIZE];
+         size_t bytes;
+
+     while ((bytes = fread(buffer, 1, BUFFER_SIZE, file)) > 0) {
+     send(new_socket, buffer, bytes, 0);
+     }
+
+     fclose(file);
+    }
+   
 
     close(new_socket);
+
 }
+
 }
