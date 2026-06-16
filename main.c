@@ -89,7 +89,6 @@ while(1){
         
         char *bad = "HTTP/1.0 400 Bad Request\r\n\r\n";
         send(new_socket, bad, strlen(bad), 0);
-        close(new_socket);
         continue;
     }
 
@@ -97,7 +96,7 @@ while(1){
     if (second_space == NULL) {
         char *bad = "HTTP/1.0 400 Bad Request\r\n\r\n";
         send(new_socket, bad, strlen(bad), 0);
-        close(new_socket);
+        
         continue;
     }
 
@@ -106,7 +105,7 @@ while(1){
     if (filename_len < 0 || filename_len >= 256) {
         char *bad = "HTTP/1.0 400 Bad Request\r\n\r\n";
         send(new_socket, bad, strlen(bad), 0);
-        close(new_socket);
+        
         continue;
     }
 
